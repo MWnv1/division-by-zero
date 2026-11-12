@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零可以做分母吗 — 十四种形式化方案及其代价</title>
+<meta name="description" content="以 Bergstra 的除零方案综述为主线，给出 0 作为分母的十四种自洽形式化方案、各自的代价、形式论证与反方最强反驳。">
+<style>
+:root{
+  --paper:#faf7f1;
+  --paper-2:#f2ede3;
+  --ink:#1b1a17;
+  --ink-soft:#4a463f;
+  --rule:#d8d1c2;
+  --accent:#a83a22;
+  --accent-2:#2f6b62;
+  --mono:"Iosevka","SFMono-Regular",ui-monospace,"Cascadia Mono","Menlo",Consolas,monospace;
+  --serif:"Source Serif 4","Songti SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#161513;
+    --paper-2:#1e1c19;
+    --ink:#e9e4d8;
+    --ink-soft:#a9a293;
+    --rule:#332f29;
+    --accent:#e07a5f;
+    --accent-2:#7fb8ae;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:18px;
+  line-height:1.78;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 24px}
+
+/* ---------- 页首 ---------- */
+header.top{
+  border-bottom:1px solid var(--rule);
+  padding:72px 0 40px;
+  margin-bottom:56px;
+}
+.kicker{
+  font-family:var(--mono);
+  font-size:11.5px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin:0 0 22px;
+}
+h1{
+  font-size:clamp(30px,6vw,46px);
+  line-height:1.22;
+  font-weight:600;
+  letter-spacing:-.015em;
+  margin:0 0 18px;
+}
+.sub{
+  font-size:17px;
+  color:var(--ink-soft);
+  margin:0 0 30px;
+  max-width:38em;
+}
+.byline{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink-soft);
+  letter-spacing:.06em;
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+}
+.byline span+span::before{content:"·";margin-right:18px;opacity:.5}
+
+/* ---------- 目录 ---------- */
+nav.toc{
+  background:var(--paper-2);
+  border:1px solid var(--rule);
+  padding:22px 26px;
+  margin:0 0 56px;
+  font-size:14px;
+}
+nav.toc .t{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:12px}
+nav.toc ol{margin:0;padding-left:1.3em;columns:2;column-gap:34px}
+@media (max-width:560px){nav.toc ol{columns:1}}
+nav.toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+nav.toc a:hover{border-bottom-color:var(--accent)}
+
+/* ---------- 章节 ---------- */
+section{margin:0 0 68px;scroll-margin-top:24px}
+h2{
+  font-size:20px;
+  font-weight:600;
+  margin:0 0 22px;
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+}
+h2 .num{
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:500;
+  color:var(--accent);
+  letter-spacing:.1em;
+  border:1px solid currentColor;
+  border-radius:2px;
+  padding:1px 7px 2px;
+  flex:none;
+  transform:translateY(-2px);
+}
+h3{font-size:16.5px;font-weight:600;margin:38px 0 12px;letter-spacing:.01em}
+p{margin:0 0 1.15em}
+strong{font-weight:600}
+a{color:var(--accent-2);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent-2) 40%,transparent)}
+a:hover{border-bottom-color:var(--accent-2)}
+sup{font-size:.72em}
+
+/* ---------- 数学 ---------- */
+code,.m{
+  font-family:var(--mono);
+  font-size:.9em;
+  background:var(--paper-2);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:.08em .38em;
+  white-space:nowrap;
+}
+.formula{
+  font-family:var(--mono);
+  font-size:.94em;
+  line-height:1.9;
+  background:var(--paper-2);
+  border-left:3px solid var(--accent);
+  padding:16px 20px;
+  margin:0 0 1.3em;
+  overflow-x:auto;
+  white-space:pre;
+}
+.formula.plain{border-left-color:var(--accent-2)}
+
+/* ---------- 证明块 ---------- */
+.proof{
+  border:1px solid var(--rule);
+  border-left:4px solid var(--accent);
+  padding:20px 24px;
+  margin:0 0 1.4em;
+  background:color-mix(in srgb,var(--paper-2) 60%,var(--paper));
+}
+.proof .label{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);display:block;margin-bottom:10px;
+}
+.proof p:last-child{margin-bottom:0}
+
+blockquote{
+  margin:0 0 1.4em;
+  padding:0 0 0 22px;
+  border-left:2px solid var(--rule);
+  color:var(--ink-soft);
+  font-style:italic;
+}
+
+/* ---------- 方案表 ---------- */
+.tablewrap{overflow-x:auto;margin:0 0 1.4em;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.6;background:var(--paper)}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-soft);background:var(--paper-2);border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);color:var(--ink-soft);width:2.2em}
+td .v{font-family:var(--mono);font-size:.95em}
+td.ref{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.cost{
+  display:inline-block;font-family:var(--mono);font-size:11.5px;
+  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+  border-radius:2px;padding:0 5px;margin:1px 0;
+}
+
+/* ---------- 卡片 ---------- */
+.cards{display:grid;gap:16px;margin:0 0 1.4em}
+.card{
+  border:1px solid var(--rule);
+  padding:18px 20px;
+  background:color-mix(in srgb,var(--paper-2) 45%,var(--paper));
+}
+.card h4{margin:0 0 8px;font-size:15px;font-weight:600}
+.card h4 .tag{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent-2);margin-right:8px;
+}
+.card p{margin:0 0 .6em;font-size:15px;line-height:1.7}
+.card p:last-child{margin-bottom:0}
+
+/* ---------- 结论 ---------- */
+.verdict{
+  border-top:2px solid var(--ink);
+  border-bottom:1px solid var(--rule);
+  padding:26px 0;
+  margin:0 0 1.4em;
+}
+.verdict p{font-size:19px;line-height:1.72;margin:0}
+
+/* ---------- 参考文献 ---------- */
+ol.refs{list-style:none;counter-reset:r;margin:0;padding:0;font-size:14.5px;line-height:1.7}
+ol.refs li{
+  counter-increment:r;
+  position:relative;
+  padding:0 0 14px 34px;
+  margin:0 0 0;
+}
+ol.refs li::before{
+  content:"[" counter(r) "]";
+  position:absolute;left:0;top:0;
+  font-family:var(--mono);font-size:12px;color:var(--accent);
+}
+ol.refs li i{font-style:italic}
+ol.refs li .u{display:block;font-family:var(--mono);font-size:11.5px;word-break:break-all;margin-top:3px;color:var(--ink-soft)}
+ol.refs li .u a{color:var(--ink-soft);border-bottom:1px dotted var(--rule)}
+
+footer{
+  border-top:1px solid var(--rule);
+  margin-top:80px;padding:28px 0 60px;
+  font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);
+  display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;
+}
+hr.sep{border:none;border-top:1px solid var(--rule);margin:0 0 30px}
+
+@media print{
+  body{background:#fff;color:#000;font-size:11pt}
+  nav.toc{display:none}
+  header.top{padding-top:0}
+  a{color:#000;border-bottom:none}
+  .tablewrap{overflow:visible}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="kicker">算术数据类型 · 除零问题 · 文献综述与论证</p>
+  <h1>零可以做分母吗</h1>
+  <p class="sub">十四种自洽的形式化方案，以及每一种各自必须付出的那条公理。</p>
+  <div class="byline">
+    <span>MWnv1</span>
+    <span>2026-11-12</span>
+    <span>基于 Bergstra〈除零方案综述〉等 15 项文献</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <span class="t">目录</span>
+  <ol>
+    <li><a href="#criteria">三条判据</a></li>
+    <li><a href="#impossibility">不可能性定理</a></li>
+    <li><a href="#options">十四种方案</a></li>
+    <li><a href="#meadow">最强论证：meadow</a></li>
+    <li><a href="#wheel">轮式代数</a></li>
+    <li><a href="#rebuttal">反方最强一击</a></li>
+    <li><a href="#conclusion">结论与选型</a></li>
+    <li><a href="#refs">参考文献</a></li>
+  </ol>
+</nav>
+
+<section id="abstract">
+  <h2><span class="num">00</span>摘要</h2>
+  <p>在通常算术里，<code>1/0</code> 与 <code>0/0</code> 不可能有值，这一点有严格证明，不是习惯问题。但在<strong>改变某一条前提</strong>的形式系统中，把 0 放在分母位不仅合法，而且有定理支撑、有完全公理化、有硬件实现、有千余年文献实践。</p>
+  <p>本文的主张不是"0 可以做分母"，而是一个更精确的命题：<strong>0 可以做分母，当且仅当你愿意为它放弃一条公理。</strong>十四条方案，就是十四次不同的"交换"。任何声称证明了前者的论证，实际证明的都是后者。</p>
+</section>
+
+<section id="criteria">
+  <h2><span class="num">01</span>三条判据</h2>
+  <p>一个表达式 <code>a/0</code> 要通过"可以做分母"的检验，需同时过三关：</p>
+  <div class="cards">
+    <div class="card">
+      <h4><span class="tag">语法</span>能写</h4>
+      <p>符号串在系统内是合法项，而不是被语法规则直接排除的写法。</p>
+    </div>
+    <div class="card">
+      <h4><span class="tag">语义</span>有指称</h4>
+      <p>它指称某个确定的对象（值），不是"未定义"。</p>
+    </div>
+    <div class="card">
+      <h4><span class="tag">理论</span>自洽且有定理</h4>
+      <p>加入它之后系统一致，能推出该系统的定理，且限制到非零分母时与已知算术重合。</p>
+    </div>
+  </div>
+  <p>下文所有方案的差别<strong>只在第二关和第三关</strong>。而且它们不是"终于找到了方法"，而是"各自选择放弃一条公理"。</p>
+</section>
+
+<section id="impossibility">
+  <h2><span class="num">02</span>不可能性定理：谁也绕不过的地基</h2>
+  <p>Bergstra 在其综述中给出了一条把所有人都卡住的命题<sup>[1]</sup>：</p>
+
+  <div class="proof">
+    <span class="label">命题 · 非平凡 premeadow 中零不成倒数</span>
+    <p>在任意满足 <code>0 ≠ 1</code>、加法与乘法构成交换幺半群、<code>0·0 = 0</code>、逆运算在非零元上给出真逆元的算术数据类型中，<code>0⁻¹</code> <strong>不可能</strong>是 0 的真乘法逆元，即恒有 <code>0·0⁻¹ ≠ 1</code>。</p>
+  </div>
+
+  <div class="formula">设 0·q = 1，则
+  0 = 0·1 = 0·(0·q) = (0·0)·q = 0·q = 1
+与非平凡假设 0 ≠ 1 矛盾。∎</div>
+
+  <p>这条命题的力度在于：它不是"数学家没找到办法"，而是<strong>"找到办法"会与某条被放弃的公理冲突</strong>。因此任何一条"0 做分母"的论证，本质上都是在四条公理里挑一条来弃：</p>
+  <div class="formula plain">① 0·x = 0　　② x + (−x) = 0　　③ 1 ≠ 0　　④ 除法是全函数</div>
+  <p>下文十四种方案，就是十四种不同的选择。经济学上这叫"没有免费午餐"。</p>
+</section>
+
+<section id="options">
+  <h2><span class="num">03</span>十四种方案：谁付了什么账</h2>
+
+  <div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>方案</th><th>1/0</th><th>0/0</th><th>放弃的那条公理</th><th>文献</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="n">1</td><td><strong>平凡环</strong></td><td class="v">0</td><td class="v">0</td><td><span class="cost">1 ≠ 0</span>（整个结构塌缩）</td><td class="ref">—</td></tr>
+      <tr><td class="n">2</td><td><strong>对合 meadow</strong></td><td class="v">0</td><td class="v">0</td><td><span class="cost">x·x⁻¹ = 1 无条件成立</span>；UFAR 失效</td><td class="ref">[2][3]</td></tr>
+      <tr><td class="n">3</td><td><strong>common meadow</strong></td><td class="v">⊥</td><td class="v">⊥</td><td><span class="cost">x + (−x) = 0</span></td><td class="ref">[4]</td></tr>
+      <tr><td class="n">4</td><td><strong>轮 wheel</strong></td><td class="v">∞</td><td class="v">⊥</td><td><span class="cost">0·x = 0</span>、分配律、<code>x/x = 1</code></td><td class="ref">[5][1]</td></tr>
+      <tr><td class="n">5</td><td><strong>transreal</strong></td><td class="v">±∞</td><td class="v">Φ</td><td><span class="cost">与极限一致</span>（改求值次序）</td><td class="ref">[6][1]</td></tr>
+      <tr><td class="n">6</td><td><strong>黎曼球面</strong></td><td class="v">∞</td><td class="v">—</td><td><span class="cost">域结构</span>（∞ 非数）</td><td class="ref">[1][5]</td></tr>
+      <tr><td class="n">7</td><td><strong>IEEE 754</strong></td><td class="v">±∞</td><td class="v">NaN</td><td><span class="cost">实数语义、结合律</span></td><td class="ref">[7][8]</td></tr>
+      <tr><td class="n">8</td><td><strong>三值逻辑</strong></td><td class="v">无值</td><td class="v">无值</td><td><span class="cost">二值语义学</span></td><td class="ref">[1]</td></tr>
+      <tr><td class="n">9</td><td><strong>除法关系化</strong></td><td class="v">∅</td><td class="v">全集</td><td><span class="cost">除法是函数</span></td><td class="ref">[1]</td></tr>
+      <tr><td class="n">10</td><td><strong>极限 / 不定式</strong></td><td class="v">→ ∞</td><td class="v">待定</td><td><span class="cost">无</span>（本来就允许）</td><td class="ref">—</td></tr>
+      <tr><td class="n">11</td><td><strong>零微积分</strong></td><td class="v">0</td><td class="v">0</td><td><span class="cost">与标准分析一致</span></td><td class="ref">[11][12]</td></tr>
+      <tr><td class="n">12</td><td><strong>条件期望</strong></td><td class="v">有值</td><td class="v">有值</td><td><span class="cost">分母必须是数</span></td><td class="ref">[13][14]</td></tr>
+      <tr><td class="n">13</td><td><strong>khahara（印度传统）</strong></td><td class="v">无穷量</td><td class="v">—</td><td><span class="cost">无</span></td><td class="ref">[9][10]</td></tr>
+      <tr><td class="n">14</td><td><strong>Q₁ / Q₇₃₁</strong></td><td class="v">1 / 731</td><td class="v">1 / 731</td><td><span class="cost">无</span>（仅证明任意性）</td><td class="ref">[1]</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>方案 1｜平凡环：逻辑上并非不可能</h3>
+  <p>令 <code>0 = 1</code>，则 0 的逆元就是它自己，<code>0/0 = 0</code> 完全合法。代价是整个数系退化为一个点。这也解释了为何"模 n 的整数环中 0 可逆"只在 n = 1 时成立。它的论证价值是：<strong>"0 可做分母"不是逻辑矛盾，只是要付出"整个结构消失"的代价</strong>——一个极限情形。</p>
+
+  <h3>方案 2｜对合 meadow：唯一有完全性定理的一条</h3>
+  <p>在域签名上增加一元逆运算 <code>⁻¹</code>，公理强制它<strong>全函数</strong>，并取 <code>0⁻¹ = 0</code>，于是 <code>1/0 = 0</code>。这是全部方案中唯一具备"完全公理化"地位的一条（详见下一节）。代价是 <code>x·x⁻¹ = 1</code> 只在 <code>x ≠ 0</code> 时成立，无条件分数加法规则 UFAR 失效，只剩条件版 CFAR。</p>
+
+  <h3>方案 3｜common meadow：工程直觉最强</h3>
+  <p>仍取全函数，但 <code>0⁻¹ = ⊥</code>，且 ⊥ 吸收一切运算（<code>⊥+x = ⊥</code>、<code>⊥·x = ⊥</code>）。Bergstra 与 Ponse 给出 basis theorem<sup>[4]</sup>。代价：<code>⊥ + (−⊥) = ⊥ ≠ 0</code>，直接撞上 <code>x+(−x)=0</code>——但换来 UFAR 成立，分数运算规则完好。</p>
+
+  <h3>方案 8｜三值逻辑：不造新数，只改语义学</h3>
+  <p>不碰数系，只承认 <code>1/0</code> 是<strong>合法语法项但无指称</strong>，用三值逻辑（真／假／未定义）或短接逻辑来处理 <code>x ≠ 0 → x·(1/x) = 1</code> 在 <code>x := 0</code> 的代入。Bergstra 明确列出四类策略：部分函数逻辑、误差代数、无穷合取、短接求值<sup>[1]</sup>。这是最保守的一条——把"不能做分母"从<strong>语法禁令</strong>降级为<strong>语义空缺</strong>，本身已经是一次实质性让步。</p>
+
+  <h3>方案 9｜除法关系化：不定义商，只定义约束</h3>
+  <p>把 <code>b = a/c</code> 理解为约束 <code>a = b·c</code>。于是当 <code>c = 0</code>：<code>a ≠ 0</code> 时解集为 ∅（商不存在）；<code>a = 0</code> 时解集为<strong>全体元素</strong>（商欠定）。<code>0/0</code> 不是"无意义"，而是"全解"。这在关系代数与逻辑编程里是标准做法。Bergstra 论文中 capture inverses 与 produce inverses 的区分，正是这条的形式化入口<sup>[1]</sup>。代价：<code>(a/b)·b = a</code> 不再可代换。</p>
+
+  <h3>方案 10｜极限：0/0 型是分析学的核心对象</h3>
+  <p><code>lim sin x / x = 1</code>，导数定义本身就是 0/0 型，L'Hôpital 法则处理的就是 0/0。它从来不"错误"，只是需要额外信息（趋近路径、阶数）来定型。这条不放弃任何公理，代价是：<strong>答案依赖于你如何逼近</strong>。</p>
+
+  <h3>方案 12｜条件期望：分母是测度，不是数</h3>
+  <p><code>P(A|B) = P(A∩B)/P(B)</code> 在 <code>P(B) = 0</code> 时分母为零。但用<strong>条件期望</strong>而非 Bayes 公式，可以把条件化推广到零概率事件<sup>[13]</sup>。代价：结果依赖额外结构（σ-代数、极限方式、度量、最大熵）——这就是 <strong>Borel–Kolmogorov 悖论</strong>：同一事件按不同参数化给出不同答案，而这不叫矛盾，叫"同一个零概率事件的两种不同条件化"<sup>[14]</sup>。这是全篇最漂亮的一条：<strong>分母为零时商依然存在，前提是分母携带"如何逼近"的信息。</strong></p>
+
+  <h3>方案 13｜khahara：它不是没人认真做过</h3>
+  <p>Brahmagupta（598–668）在《Brāhmasphuṭasiddhānta》中写道：正数或负数除以零，是"以零为分母的分数"<sup>[10]</sup>。Bhāskara II 进一步说："一量除以零成为分母为零的分数，此分数称为<strong>无穷量</strong>（khahara）"<sup>[9]</sup>。更妙的是他引入"<strong>0 上的待定运算</strong>"（impending operations on zero），认为 <code>a×0/0 ≠ 0/0</code> 而 <code>= a</code>——这几乎就是"除法是关系、需要上下文"的雏形。</p>
+  <p>也就是说，0 在分母位不是从未被严肃书写的产物，而是<strong>被显式定义、显式命名、显式运算过</strong>的对象，只是后来被域公理这套更强势的框架淘汰。</p>
+</section>
+
+<section id="meadow">
+  <h2><span class="num">04</span>最强论证：把 <code>1/0 = 0</code> 写成定理</h2>
+  <p>设签名 <code>Σ_md = ⟨0, 1, +, ·, −, ⁻¹⟩</code>，公理集 <code>Md</code> 包含：</p>
+  <div class="formula">(x⁻¹)⁻¹ = x + 0·x⁻¹　　　　x·x⁻¹ = 1 + 0·x⁻¹
+(x·y)⁻¹ = x⁻¹·y⁻¹　　　　　1⁻¹ = 1
+0⁻¹ = 0　　　　　　　　　0·(x·y) = 0·(x+y)</div>
+  <p>关键设计在于最后两条：它不否认矛盾，而是用"异常项 <code>0·x⁻¹</code>"把矛盾<strong>吸收</strong>掉。<code>0⁻¹ = 0</code> 与前述公理是相容的。</p>
+
+  <div class="proof">
+    <span class="label">定理 · Bergstra–Tucker</span>
+    <p><code>Md + C₀</code> 是特征 0 对合消去 meadow 等式理论的<strong>有限完全公理化</strong>；<code>Q₀</code> 是其初始代数<sup>[2][3]</sup>。</p>
+  </div>
+
+  <p>于是论证可以写成三步：</p>
+  <div class="cards">
+    <div class="card"><h4>① 有值</h4><p>在 <code>Q₀</code> 中，<code>1/0</code> 是一个<strong>项的值</strong>，即 0。</p></div>
+    <div class="card"><h4>② 唯一</h4><p>该值由公理决定，不由人挑；不是约定，而是可判定的理论后果。</p></div>
+    <div class="card"><h4>③ 可退化</h4><p>限制到 <code>x ≠ 0</code> 时退化为通常域运算，已知算术不被推翻。</p></div>
+  </div>
+
+  <p>所以"0 可以做分母"在这里获得了最强的形式：<strong>不是约定，而是定理的对象。</strong>代价精确地写在公理表上——<code>x·x⁻¹ = 1</code> 被换成了 <code>x·x⁻¹ = 1 + 0·x⁻¹</code>。</p>
+</section>
+
+<section id="wheel">
+  <h2><span class="num">05</span>轮式代数：最彻底的一条</h2>
+  <p>Carlström 的〈Wheels — on division by zero〉把除法做成<strong>永远有定义</strong>：<code>1/0 = ∞</code>，<code>0/0 = ⊥</code>，并证明<strong>任意交换环或半环都可嵌入一个 wheel</strong><sup>[5]</sup>。这是一条真正的嵌入定理，而不是约定。</p>
+  <p>它的几何来源是"射影直线再加上一个点 ⊥"——术语 wheel 就取自那个拓扑图形 ⊙。代价也最狠：<code>0·x = 0</code> 失效，乘法对加法不再分配，<code>x/x ≠ 1</code><sup>[5]</sup>。</p>
+  <p>方案 5 的 transreal 算术是它的工程变体：Anderson 在 SPIE 论文中给出 <code>1/0 = +∞</code>、<code>−1/0 = −∞</code>、<code>0/0 = Φ</code>（nullity），除法全定义、封闭<sup>[6]</sup>；Bergstra 将其整理为 43 条重写规则并证明<strong>合流且终止</strong><sup>[1]</sup>。代价：结果依赖"由内向外"的求值次序，而不是数学上无歧义的极限。</p>
+  <p>只加一个 ∞ 的版本（黎曼球面）则是最"正统"的：<code>z ↦ 1/z</code> 在球面上是<strong>连续映射</strong>，<code>1/0 = ∞</code>，0 是单极点。代价：∞ 不是数，<code>∞·0</code>、<code>∞−∞</code> 无定义。</p>
+  <p>工程侧的 <strong>IEEE 754</strong> 给出 <code>3.0/0.0 = +Inf</code>、<code>−1.0/0.0 = −Inf</code>、<code>0.0/0.0 = NaN</code><sup>[7]</sup>。它的论证力度在于：这不是约定，是<strong>标准强制、可复现、硬件保证</strong>。而且官方解释文件给出了语义理由——非零数除以零"应被理解为分子可表示而分母小到不可表示时的比值极限，故最好用相应符号的无穷表示"<sup>[7][8]</sup>。</p>
+</section>
+
+<section id="rebuttal">
+  <h2><span class="num">06</span>反方最强一击</h2>
+  <p>不写这一节，前面的论证不成立。Bergstra 构造了<sup>[1]</sup>：</p>
+  <div class="formula">P(x, y) = 1 / ( 1/x − 1/y )</div>
+  <p>在 <code>Q∞</code> 中 <code>P(0,0) = 0</code>；但沿路径 <code>x = y(1+x)</code> 让 <code>x, y ↓ 0</code>，得到 <code>P → 1</code>，故二重极限根本不存在。同理 <code>Q(x,y) = 1/((1/x)·(1/(1/y)))</code> 得 0，而极限为 ∞。</p>
+  <p><strong>所以：这些代数赋值不是极限的忠实记录。</strong>它们的"语义正当性"只能建立在"由内向外求值"这个<strong>语法策略</strong>上，而不能建立在分析上。</p>
+  <p>更能说明问题的是，Bergstra 在同一框架里构造了 <code>0⁻¹ = 1</code>（记作 <code>Q₁</code>）与 <code>0⁻¹ = 731</code>（记作 <code>Q₇₃₁</code>），后者的用意是：只要 731 不进入任何定理，它与 <code>1/0 = 0</code> 在理论上<strong>同权</strong><sup>[1]</sup>。</p>
+  <blockquote>在 premeadow 框架内，<code>1/0</code> 取什么值，原则上不可被数学约束。</blockquote>
+  <p>于是任何"我论证了 0 可以做分母"的声明，精确形式只能是：<strong>存在一个自洽的算术数据类型，其中 0 处于分母位且有值。</strong>而不是"在通常算术里 0/0、1/0 有值"。前者可证（十四条路径），后者可证伪（三行反证）。</p>
+</section>
+
+<section id="conclusion">
+  <h2><span class="num">07</span>结论与选型</h2>
+  <div class="verdict">
+    <p>0 可以做分母；代价是那个商不再是数，而是你选定的代数给出的一个标签——而一旦选定这个标签，你就必须交出使商唯一的那条公理。</p>
+  </div>
+  <p>若真要使用，按场景选型：</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>场景</th><th>用哪一条</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td>工程 / 硬件</td><td>IEEE 754</td><td>标准强制，可复现，无需自建理论</td></tr>
+      <tr><td>证明助手 / 形式化</td><td>对合 meadow（<code>1/0 = 0</code>）</td><td>有限完全公理化，可判定，与域运算在其他点重合</td></tr>
+      <tr><td>几何 / 复分析</td><td>球面或 wheel</td><td>∞ 与 ⊥ 有确定的拓扑含义（单极点）</td></tr>
+      <tr><td>概率 / 统计</td><td>条件期望</td><td>分母是测度而非数，额外结构可消除歧义</td></tr>
+      <tr><td>教学 / 论证</td><td>平凡环 + khahara</td><td>演示"逻辑上并非不可能，只是要付账"</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>反过来，如果你要的是<strong>唯一且可代换的商</strong>，那么 0 必须留在分母之外——这不是禁忌，而是一条明确的定价。</p>
+</section>
+
+<section id="refs">
+  <h2><span class="num">08</span>参考文献</h2>
+  <hr class="sep">
+  <ol class="refs">
+    <li>Bergstra, J. A. <i>Division by Zero: A Survey of Options</i>. 2019. 本文的主线：premeadow 框架、十四条方案的分类、路径依赖反例、Q₁ 与 Q₇₃₁ 的任意性论证。
+      <span class="u"><a href="https://pdfs.semanticscholar.org/15d8/d647feee120dbc50e5247903ecc941429913.pdf" target="_blank" rel="noopener">pdfs.semanticscholar.org/15d8/…</a></span></li>
+    <li>Bergstra, J. A.; Bethke, I.; Ponse, A. <i>Cancellation Meadows: a Generic Basis Theorem and Some Applications</i>. arXiv:0803.3969. 给出 <code>Q₀</code>（零全化逆，<code>0⁻¹ = 0</code>）的设定与完全性结果。
+      <span class="u"><a href="https://arxiv.org/pdf/0803.3969" target="_blank" rel="noopener">arxiv.org/pdf/0803.3969</a></span></li>
+    <li>Bergstra, J. A.; Tucker, J. V. <i>The Rational Numbers as an Abstract Data Type</i>. Journal of the ACM 54(2), 2007. meadow 作为抽象数据类型的原始工作。
+      <span class="u"><a href="https://arxiv.org/pdf/0803.3969" target="_blank" rel="noopener">（经 [2] 的文献表引用）</a></span></li>
+    <li>Bergstra, J. A.; Ponse, A. <i>Division by Zero in Common Meadows</i>. arXiv:1406.6878. 吸收元 ⊥ 的公理表与 basis theorem。
+      <span class="u"><a href="https://arxiv.org/pdf/1406.6878v1" target="_blank" rel="noopener">arxiv.org/pdf/1406.6878v1</a></span></li>
+    <li>Carlström, J. <i>Wheels — on Division by Zero</i>. 2001/2004；"任意交换环可嵌入 wheel"的嵌入定理。
+      <span class="u"><a href="https://handwiki.org/wiki/Wheel_theory" target="_blank" rel="noopener">handwiki.org/wiki/Wheel_theory</a></span></li>
+    <li>Anderson, J. A. D. W.; Völker, N.; Adams, A. A. <i>Perspex Machine VIII: Axioms of Transreal Arithmetic</i>. Proc. SPIE 6499, 2007. transreal：<code>±∞</code> 与 <code>Φ</code>。
+      <span class="u"><a href="https://zenodo.org/record/810883/files/PerspexMachineVIII.pdf" target="_blank" rel="noopener">zenodo.org/record/810883</a></span></li>
+    <li>IEEE. <i>Standards Interpretation for IEEE Std 754-1985</i>. 官方对"除零 = 取极限"的解释。
+      <span class="u"><a href="https://standards.ieee.org/content/dam/ieee-standards/standards/web/documents/interpretations/754-1985_interp.pdf" target="_blank" rel="noopener">standards.ieee.org/…/754-1985_interp.pdf</a></span></li>
+    <li>Kahan, W. <i>Lecture Notes on the Status of IEEE Standard 754 for Binary Floating-Point Arithmetic</i>. 除零异常与符号零的说明。
+      <span class="u"><a href="https://people.eecs.berkeley.edu/~wkahan/ieee754status/IEEE754.PDF" target="_blank" rel="noopener">people.eecs.berkeley.edu/~wkahan/…</a></span></li>
+    <li>O'Connor, J. J.; Robertson, E. F. <i>Bhaskara II (1114–1185)</i>. MacTutor History of Mathematics. 引《Bijaganita》"分母为零的分数称为无穷量"。
+      <span class="u"><a href="https://mathshistory.st-andrews.ac.uk/Biographies/Bhaskara_II/" target="_blank" rel="noopener">mathshistory.st-andrews.ac.uk/…/Bhaskara_II/</a></span></li>
+    <li>Divakaran, S. <i>Mathematics in India</i>（Bhāvanā 连载）／印度统计研究所〈Zero〉专题。Brahmagupta 与 Bhāskara 关于 <code>a/0</code> 的原文与 <code>0/0</code> 的处理。
+      <span class="u"><a href="https://www.isid.ac.in/~rahul/zero/node3.html" target="_blank" rel="noopener">isid.ac.in/~rahul/zero/node3.html</a></span></li>
+    <li>Okumura, H.; Saitoh, S. <i>Wasan Geometry and Division by Zero Calculus</i>. Sangaku J. Math. 2 (2018). 零微积分：<code>1/0 = 0</code>、<code>tan(π/2) = 0</code>。
+      <span class="u"><a href="https://sangaku-journal.eu/2018/SJM_2018_57-73_okumura_saitoh.pdf" target="_blank" rel="noopener">sangaku-journal.eu/…/SJM_2018_57-73</a></span></li>
+    <li>Pinelas, S.; Saitoh, S. <i>Division by Zero Calculus and Differential Equations</i>. Springer Proc. Math. &amp; Stat. 230. 零微积分在微分方程上的外推。
+      <span class="u"><a href="https://link.springer.com/chapter/10.1007/978-3-319-75647-9_33" target="_blank" rel="noopener">link.springer.com/chapter/10.1007/978-3-319-75647-9_33</a></span></li>
+    <li>Gyenis, Z.; Rédei, M. <i>Conditioning Using Conditional Expectations: The Borel–Kolmogorov Paradox</i>. Synthese. 论证条件期望才是零概率条件化的正确装置。
+      <span class="u"><a href="https://hps.elte.hu/~gszabo/Preprints/Borel-Kolmogorov.pdf" target="_blank" rel="noopener">hps.elte.hu/~gszabo/Preprints/Borel-Kolmogorov.pdf</a></span></li>
+    <li>HandWiki. <i>Conditioning (probability)</i>. 零概率事件条件化的"额外输入"要求与 Borel 悖论的关系。
+      <span class="u"><a href="https://handwiki.org/wiki/Conditioning_(probability)" target="_blank" rel="noopener">handwiki.org/wiki/Conditioning_(probability)</a></span></li>
+    <li>〈History of the Division by Zero and Division by Zero Calculus〉. Roman Science Publications, 2022. 除零史的时间线与各派主张（含优先权争议）。
+      <span class="u"><a href="https://romanpub.com/resources/1.%20dbzc%202022.pdf" target="_blank" rel="noopener">romanpub.com/resources/1. dbzc 2022.pdf</a></span></li>
+  </ol>
+
+  <h3>关于本文的诚实标注</h3>
+  <p>零微积分（方案 11）在主流数学界<strong>未被接受</strong>；其"发现于 2014 年"的优先权主张被 Bergstra 用 1975 年 Komori 的文献直接反驳<sup>[1][15]</sup>。transreal 算术同样不是标准算术的替代品。本文把它们列入，是为了完整呈现"自洽"与"被承认"之间的差别，而不是为其背书。</p>
+</section>
+
+<footer>
+  <span>零可以做分母吗 · 十四种形式化方案及其代价</span>
+  <span>MWnv1 · 2026-11-12</span>
+</footer>
+
+</div>
+</body>
+</html>
